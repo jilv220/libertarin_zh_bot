@@ -1,7 +1,8 @@
 import tweepy
 def handle_auth(consumer_key, consumer_secret):
     # Create an OAuthHandler instance
-    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret,
+    callback="oob")
 
     # Get the request token
     auth_url = auth.get_authorization_url()
@@ -18,3 +19,21 @@ def handle_auth(consumer_key, consumer_secret):
     print('Access token secret: ' + auth.access_token_secret)
 
     return (auth.access_token, auth.access_token_secret)
+
+def create_api(
+    consumer_key, 
+    consumer_secret,
+    access_token,
+    access_token_secret):
+
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+    auth.set_access_token(access_token, access_token_secret)
+    api = tweepy.API(auth, wait_on_rate_limit=True)
+    try:
+        api.verify_credentials()
+    except Exception as e:
+        print("Error creating API")
+        raise e
+    print("API created")
+
+    return api
