@@ -1,9 +1,7 @@
-from dotenv import dotenv_values
-from auth import handle_auth, create_api
-from utils import get_handles
+from auth import create_api
 from datetime import datetime, timezone, timedelta
 from tweet import Tweet
-from exceptions import EnvEmptyValue
+from setup import load_dotenv, load_config
 
 import tweepy
 import deepl
@@ -12,42 +10,13 @@ import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.ERROR)
 
-def load_dotenv():
-    env = dotenv_values('.env')
-
-    try:
-        consumer_key = env['TWITTER_CONSUMER_KEY']
-        consumer_secret = env['TWITTER_CONSUMER_SECRET']
-        bearer_token = env['BEARER_TOKEN']
-    except KeyError:
-        logger.error('Missing Twitter authentication entries from the dotenv file')
-        exit()
-
-    try:
-        deepl_auth_key = env['DEEPL_AUTH_KEY']
-    except KeyError:
-        logger.error('Missing DEEPL authentication key entry from the dotenv file')
-        exit()
-
-    try:
-        access_token = env['ACCESS_TOKEN']
-        access_token_secret = env['ACCESS_TOKEN_SECRET']
-    except KeyError:
-        logger.error('Missing Twitter access entries from the dotenv file')
-        access = handle_auth(consumer_key, consumer_secret)
-        (access_token, access_token_secret) = access
-
-    if '' in (consumer_key, consumer_secret, bearer_token, 
-    access_token, access_token_secret):
-        raise EnvEmptyValue()
-    
-    return (consumer_key, consumer_secret, bearer_token, 
-    access_token, access_token_secret, deepl_auth_key)
-
 def main():
     # Load dotenv
     (consumer_key, consumer_secret, bearer_token, 
-        access_token, access_token_secret, deepl_auth_key) = load_dotenv()
+        access_token, access_token_secret, deepl_auth_key) = load_dotenv('.env')
+
+    # Load config
+    (twitter_handles, target_language) = load_config()
 
     # Auth and get api instance
     api = create_api(consumer_key, consumer_secret, access_token, access_token_secret)
@@ -56,7 +25,6 @@ def main():
     client = tweepy.Client(bearer_token)
 
     # Get ids from handle
-    twitter_handles = get_handles()
     users = api.lookup_users(screen_name = twitter_handles)
     ids = [user.id for user in users]
 
@@ -88,7 +56,7 @@ def main():
 
     for tweet in tweet_list:
         # Need to handle possible exceptions here
-        translated_text = translator.translate_text(tweet.text, target_lang="ZH").text
+        translated_text = translator.translate_text(tweet.text, target_lang=target_language).text
         response = client.create_tweet(
             text=translated_text,
             quote_tweet_id= tweet.id
