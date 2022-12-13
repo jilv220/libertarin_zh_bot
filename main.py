@@ -6,6 +6,7 @@ from tweet import Tweet
 from exceptions import EnvEmptyValue
 
 import tweepy
+import deepl
 import logging
 
 logger = logging.getLogger(__name__)
@@ -23,6 +24,12 @@ def load_dotenv():
         exit()
 
     try:
+        deepl_auth_key = env['DEEPL_AUTH_KEY']
+    except KeyError:
+        logger.error('Missing DEEPL authentication key entry from the dotenv file')
+        exit()
+
+    try:
         access_token = env['ACCESS_TOKEN']
         access_token_secret = env['ACCESS_TOKEN_SECRET']
     except KeyError:
@@ -35,17 +42,17 @@ def load_dotenv():
         raise EnvEmptyValue()
     
     return (consumer_key, consumer_secret, bearer_token, 
-    access_token, access_token_secret)
+    access_token, access_token_secret, deepl_auth_key)
 
 def main():
     # Load dotenv
     (consumer_key, consumer_secret, bearer_token, 
-    access_token, access_token_secret) = load_dotenv()
+        access_token, access_token_secret, deepl_auth_key) = load_dotenv()
 
     # Auth and get api instance
     api = create_api(consumer_key, consumer_secret, access_token, access_token_secret)
 
-    # client
+    # Client
     client = tweepy.Client(bearer_token)
 
     # Get ids from handle
@@ -65,24 +72,27 @@ def main():
                     )
         
         if response.data is None:
-            # no latest tweets from this user, skip
+            # No latest tweets from this user, skip
             continue
 
         for tweet in response.data:
             tweet_list.append(Tweet(tweet.id, tweet.text))
 
-    print(tweet_list)
+    client = tweepy.Client(
+        consumer_key=consumer_key, consumer_secret=consumer_secret,
+        access_token=access_token, access_token_secret=access_token_secret
+    )
 
-    # client = tweepy.Client(
-    #     consumer_key=consumer_key, consumer_secret=consumer_secret,
-    #     access_token=access_token, access_token_secret=access_token_secret
-    # )
+    # Init translator
+    translator = deepl.Translator(deepl_auth_key)
 
-    # for tweet_id in tweet_ids:
-    #     response = client.create_tweet(
-    #         text='This is a test quote. Beep boop~~',
-    #         quote_tweet_id= tweet_ids[0]
-    #     )
+    for tweet in tweet_list:
+        # Need to handle possible exceptions here
+        translated_text = translator.translate_text(tweet.text, target_lang="ZH").text
+        response = client.create_tweet(
+            text=translated_text,
+            quote_tweet_id= tweet.id
+        )
 
 if __name__ == "__main__":
     main()
