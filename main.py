@@ -9,7 +9,7 @@ import logging
 import db
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.DEBUG)  # have to set to lowest level in python
 
 def main():
     # Load dotenv
@@ -35,7 +35,8 @@ def main():
     # Client
     client = tweepy.Client(bearer_token=bearer_token, consumer_key=consumer_key,
                     consumer_secret=consumer_secret, access_token=access_token, 
-                    access_token_secret=access_token_secret)
+                    access_token_secret=access_token_secret, 
+                    wait_on_rate_limit=True)
 
     # Get ids from handle
     users = api.lookup_users(screen_name = twitter_handles)
@@ -69,15 +70,23 @@ def main():
     # Init translator
     translator = deepl.Translator(deepl_auth_key)
 
+    logger.log(level=logging.INFO, msg="Start tweeting process ...")
+
     for tweet in tweet_list:
         # Need to handle possible exceptions here
         translated_text = translator.translate_text(tweet.text, target_lang=target_language).text
-        response = client.create_tweet(
-            text=translated_text,
-            quote_tweet_id= tweet.id
-        )
-        cur.execute('INSERT INTO tweets VALUES(?)', (tweet.id,))
-    
+
+        try:
+            response = client.create_tweet(
+                text=translated_text,
+                quote_tweet_id= tweet.id
+            )
+            cur.execute('INSERT INTO tweets VALUES(?)', (tweet.id,))
+        except Exception as e:
+            logger.error(e)
+
+    logger.log(level=logging.INFO, msg="Tweeting Done.")
+
     # Commit transactions and close db
     con.commit()
     db.disconnect(con)
