@@ -1,3 +1,6 @@
+from logger import Logger
+logger = Logger('main')
+
 from auth import create_api
 from datetime import datetime, timezone, timedelta
 from tweet import Tweet
@@ -5,11 +8,7 @@ from setup import load_dotenv, load_config
 
 import tweepy
 import deepl
-import logging
 import db
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)  # have to set to lowest level in python
 
 def main():
     # Load dotenv
@@ -26,7 +25,6 @@ def main():
     try:
         res = db.create_tweets_table(cur)
     except Exception as e:
-        logger.setLevel(logging.WARNING)
         logger.warning(e)
 
     # API
@@ -43,7 +41,9 @@ def main():
     ids = [user.id for user in users]
 
     date_now = datetime.now(timezone.utc)
-    one_day_before = date_now - timedelta(days=1)
+
+    # TODO: Make timedelta configurable
+    one_day_before = date_now - timedelta(hours=3)
 
     tweet_list = []
     for id in ids:
@@ -70,8 +70,7 @@ def main():
     # Init translator
     translator = deepl.Translator(deepl_auth_key)
 
-    logger.log(level=logging.INFO, msg="Start tweeting process ...")
-
+    logger.info("Start tweeting process ...")
     for tweet in tweet_list:
         # Need to handle possible exceptions here
         translated_text = translator.translate_text(tweet.text, target_lang=target_language).text
@@ -84,8 +83,10 @@ def main():
             cur.execute('INSERT INTO tweets VALUES(?)', (tweet.id,))
         except Exception as e:
             logger.error(e)
+        else:
+            logger.info(f'id:{tweet.id} tweeted')
 
-    logger.log(level=logging.INFO, msg="Tweeting Done.")
+    logger.info("Tweeting process ends successfully!")
 
     # Commit transactions and close db
     con.commit()

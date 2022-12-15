@@ -1,4 +1,8 @@
 import tweepy
+
+from logger import Logger
+logger = Logger(__name__)
+
 def handle_auth(consumer_key, consumer_secret):
     # Create an OAuthHandler instance
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret,
@@ -34,6 +38,6 @@ def create_api(
     except Exception as e:
         print("Error creating API")
         raise e
-    print("API created")
+    logger.info("API created successfully!")
 
     return api
