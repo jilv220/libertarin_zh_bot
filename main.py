@@ -42,14 +42,14 @@ def main():
 
     date_now = datetime.now(timezone.utc)
 
-    # TODO: Make timedelta configurable
-    one_day_before = date_now - timedelta(hours=3)
+    # TODO: Make start_time configurable
+    start_time = date_now - timedelta(hours=3)
 
     tweet_list = []
     for id in ids:
         response = client.get_users_tweets(
                         id = id, exclude=['retweets', 'replies'], 
-                        start_time=one_day_before, tweet_fields=['created_at'],
+                        start_time=start_time, tweet_fields=['created_at'],
                         media_fields=['media_key'], expansions=['attachments.media_keys'],
                         max_results = 20
                     )
