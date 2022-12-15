@@ -53,13 +53,14 @@ def main():
                         media_fields=['media_key'], expansions=['attachments.media_keys'],
                         max_results = 20
                     )
-        
+
         if response.data is None:
             # No latest tweets from this user, skip
             continue
 
         for tweet in response.data:
-            tweet_list.append(Tweet(tweet.id, tweet.text))
+            tweet_list.append(Tweet(tweet.id, tweet.text, 
+                True if tweet.attachments else False))
 
     # Remove quoted from tweet list
     res = cur.execute('SELECT tweet_id FROM tweets')
@@ -72,7 +73,9 @@ def main():
 
     logger.info("Start tweeting process ...")
     for tweet in tweet_list:
-        # Need to handle possible exceptions here
+
+        # TODO: Determine whether is media, and retweet if true, quote if false
+
         translated_text = translator.translate_text(tweet.text, target_lang=target_language).text
 
         try:

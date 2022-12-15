@@ -4,3 +4,4 @@ from dataclasses import dataclass
 class Tweet:
     id: int
     text: str
+    is_media: bool
