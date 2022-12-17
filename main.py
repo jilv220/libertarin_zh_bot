@@ -4,19 +4,21 @@ logger = Logger('main')
 from auth import create_api
 from datetime import datetime, timezone, timedelta
 from tweet import Tweet
+from translator import Translator
 from setup import load_dotenv, load_config
 
 import tweepy
-import deepl
 import db
 
 def main():
-    # Load dotenv
-    (consumer_key, consumer_secret, bearer_token, 
-        access_token, access_token_secret, deepl_auth_key) = load_dotenv('.env')
-
     # Load config
-    (twitter_handles, target_language) = load_config()
+    (twitter_handles, target_lang, translator_name) = load_config()
+    logger.info(f'You are using {translator_name} as the translator')
+
+    # Load dotenv
+    (consumer_key, consumer_secret, 
+    bearer_token, access_token, 
+    access_token_secret, translator_token) = load_dotenv(translator=translator_name)
 
     # Init db
     con = db.connect()
@@ -33,8 +35,7 @@ def main():
     # Client
     client = tweepy.Client(bearer_token=bearer_token, consumer_key=consumer_key,
                     consumer_secret=consumer_secret, access_token=access_token, 
-                    access_token_secret=access_token_secret, 
-                    wait_on_rate_limit=True)
+                    access_token_secret=access_token_secret, wait_on_rate_limit=True)
 
     # Get ids from handle
     users = api.lookup_users(screen_name = twitter_handles)
@@ -59,8 +60,9 @@ def main():
             continue
 
         for tweet in response.data:
+            is_media = tweet.text[:5] == 'https' and tweet.attachments
             tweet_list.append(Tweet(tweet.id, tweet.text, 
-                True if tweet.attachments else False))
+                True if is_media else False))
 
     # Remove quoted from tweet list
     res = cur.execute('SELECT tweet_id FROM tweets')
@@ -69,14 +71,22 @@ def main():
     tweet_list = [tweet for tweet in tweet_list if tweet.id not in quoted_ids]
 
     # Init translator
-    translator = deepl.Translator(deepl_auth_key)
+    translator = Translator(translator_name, translator_token)
 
     logger.info("Start tweeting process ...")
     for tweet in tweet_list:
 
-        # TODO: Determine whether is media, and retweet if true, quote if false
+        # Retweet instead if the tweet is pure media
+        if (tweet.is_media):
+            try:
+                client.retweet(tweet_id=tweet.id)
+            except Exception as e:
+                logger.error(e)
+            else:
+                logger.info(f'id:{tweet.id} retweeted')
+            continue
 
-        translated_text = translator.translate_text(tweet.text, target_lang=target_language).text
+        translated_text = translator.translate_text(tweet.text, target_lang=target_lang)
 
         try:
             response = client.create_tweet(

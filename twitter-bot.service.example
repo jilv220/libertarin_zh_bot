@@ -1,0 +1,11 @@
+[Unit]
+Description=Execute the twitter bot.
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/PWD
+ExecStart=/opt/PWD/venv/bin/python /opt/PWD/main.py
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target
