@@ -104,6 +104,7 @@ def main():
     # Commit transactions and close db
     con.commit()
     db.disconnect(con)
+    logger.info("Database closed successfully!")
 
 if __name__ == "__main__":
     main()

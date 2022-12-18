@@ -27,8 +27,9 @@ class Translator:
 
             if response.status_code == 503:
                 # Model still loading
-                logger.warning('Model not loading yet. Retry after 30 secs.')
-                time.sleep(45)
+                wait_time = 45
+                time.sleep(wait_time)
+                logger.warning(f'Model not loading yet. Retry after {wait_time} secs.')
                 self.translate_text(text, target_lang)
             elif response.status_code == 200:
                 data = response.json()
