@@ -1,5 +1,4 @@
 from logger import Logger
-from auth import create_api
 from datetime import datetime, timezone, timedelta
 from tweet import Tweet
 from translator import Translator
@@ -31,16 +30,13 @@ def main():
     except Exception as e:
         logger.warning(e)
 
-    # API
-    api = create_api(consumer_key, consumer_secret, access_token, access_token_secret)
-
     # Client
     client = tweepy.Client(bearer_token=bearer_token, consumer_key=consumer_key,
                     consumer_secret=consumer_secret, access_token=access_token, 
                     access_token_secret=access_token_secret, wait_on_rate_limit=True)
 
     # Get ids from handle
-    users = api.lookup_users(screen_name = twitter_handles)
+    users = client.get_users(usernames = twitter_handles).data
     ids = [user.id for user in users]
 
     date_now = datetime.now(timezone.utc)
