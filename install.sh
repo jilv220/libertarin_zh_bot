@@ -1,6 +1,8 @@
 #!/bin/bash
 [ "$UID" -eq 0 ] || exec sudo bash "$0" "$@"
 
+rm *.csv
+
 pkg_name=${PWD##*/} 
 cp -r ./ /opt/${pkg_name}
 chmod a+w /opt/${pkg_name}/twitter_bot.db

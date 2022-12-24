@@ -12,3 +12,4 @@ venv.bak/
 
 # Database
 *.db
+*.csv

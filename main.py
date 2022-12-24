@@ -7,7 +7,7 @@ from setup import load_dotenv, load_config
 import tweepy
 import db
 import random
-
+import pandas as pd
 
 logger = Logger('main')
 
@@ -70,6 +70,10 @@ def main():
 
     # Randomnize the tweet_list
     random.shuffle(tweet_list)
+
+    # Save to csv
+    df = pd.DataFrame(data=[tweet.text for tweet in tweet_list if tweet.is_media is False], columns=['text'])
+    df.to_csv('./data.csv', mode='w+')
 
     # Init translator
     translator = Translator(translator_name, translator_token)
