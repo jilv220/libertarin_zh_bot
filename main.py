@@ -1,14 +1,17 @@
 from logger import Logger
-from auth import create_api
 from datetime import datetime, timezone, timedelta
 from tweet import Tweet
 from translator import Translator
 from setup import load_dotenv, load_config
+from auth import create_api
+from PIL import Image
+from urllib.request import urlopen
 
 import tweepy
 import db
 import random
-
+import io
+import os
 
 logger = Logger('main')
 
@@ -53,7 +56,7 @@ def main():
         response = client.get_users_tweets(
                         id = id, exclude=['retweets', 'replies'], 
                         start_time=start_time, tweet_fields=['created_at'],
-                        media_fields=['media_key'], expansions=['attachments.media_keys'],
+                        media_fields=['url'], expansions=['attachments.media_keys'],
                         max_results = 20
                     )
 
@@ -61,10 +64,15 @@ def main():
             # No latest tweets from this user, skip
             continue
 
+        media_url = ''
+        if response.includes and response.includes['media']:
+            if len(response.includes['media']) == 1:
+                media_url = response.includes['media'][0].url
+
         for tweet in response.data:
             is_media = tweet.text[:5] == 'https' and tweet.attachments
             tweet_list.append(Tweet(tweet.id, tweet.text, 
-                True if is_media else False))
+                True if is_media else False, media_url))
 
     # Remove quoted from tweet list
     res = cur.execute('SELECT tweet_id FROM tweets')
@@ -90,6 +98,12 @@ def main():
             else:
                 logger.info(f'id:{tweet.id} retweeted')
             continue
+
+        # TODO: Add OCR support
+        # if tweet.is_media and len(tweet.media_url):
+        #      fd = urlopen(tweet.media_url)
+        #      with open('/tmp/test.png', 'wb+') as f:
+        #         os.write(f.fileno(), fd.read())
 
         translated_text = translator.translate_text(tweet.text, target_lang=target_lang)
 
