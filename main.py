@@ -1,6 +1,4 @@
 from logger import Logger
-logger = Logger('main')
-
 from auth import create_api
 from datetime import datetime, timezone, timedelta
 from tweet import Tweet
@@ -9,6 +7,10 @@ from setup import load_dotenv, load_config
 
 import tweepy
 import db
+import random
+
+
+logger = Logger('main')
 
 def main():
     # Load config
@@ -16,9 +18,9 @@ def main():
     logger.info(f'You are using {translator_name} as the translator')
 
     # Load dotenv
-    (consumer_key, consumer_secret, 
-    bearer_token, access_token, 
-    access_token_secret, translator_token) = load_dotenv(translator=translator_name)
+    (consumer_key, consumer_secret,
+        bearer_token, access_token,
+        access_token_secret, translator_token) = load_dotenv(translator=translator_name)
 
     # Init db
     con = db.connect()
@@ -70,6 +72,9 @@ def main():
     quoted_ids = [item for sublist in quoted_ids for item in sublist]
     tweet_list = [tweet for tweet in tweet_list if tweet.id not in quoted_ids]
 
+    # Randomnize the tweet_list
+    random.shuffle(tweet_list)
+
     # Init translator
     translator = Translator(translator_name, translator_token)
 
@@ -105,6 +110,7 @@ def main():
     con.commit()
     db.disconnect(con)
     logger.info("Database closed successfully!")
+
 
 if __name__ == "__main__":
     main()
