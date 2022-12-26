@@ -8,6 +8,7 @@ import tweepy
 import db
 import random
 import pandas as pd
+import os
 
 logger = Logger('main')
 
@@ -42,7 +43,7 @@ def main():
     date_now = datetime.now(timezone.utc)
 
     # TODO: Make start_time configurable
-    start_time = date_now - timedelta(hours=3)
+    start_time = date_now - timedelta(hours=6)
 
     tweet_list = []
     for id in ids:
@@ -73,7 +74,10 @@ def main():
 
     # Save to csv
     df = pd.DataFrame(data=[tweet.text for tweet in tweet_list if tweet.is_media is False], columns=['text'])
-    df.to_csv('./data.csv', mode='w+')
+    if not os.path.isfile('./data.csv'):
+        df.to_csv('./data.csv', mode="w", header=True, index=False)
+    else:
+        df.to_csv('./data.csv', mode='a', header=False, index=False)
 
     # Init translator
     translator = Translator(translator_name, translator_token)
